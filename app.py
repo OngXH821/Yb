@@ -12,19 +12,26 @@ def load_data():
     return df
 
 # Preprocess data
+from imblearn.over_sampling import SMOTE
+
 def preprocess_data(df):
     X = df['review']
     y = df['sentiment']
-    
+
     # Split into training and test data
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
+
     # Vectorize the text
     vectorizer = TfidfVectorizer(max_features=5000, stop_words='english')
     X_train_tfidf = vectorizer.fit_transform(X_train)
     X_test_tfidf = vectorizer.transform(X_test)
-    
-    return X_train_tfidf, X_test_tfidf, y_train, y_test, vectorizer
+
+    # Handle data imbalance using SMOTE
+    smote = SMOTE(random_state=42)
+    X_train_tfidf_resampled, y_train_resampled = smote.fit_resample(X_train_tfidf, y_train)
+
+    return X_train_tfidf_resampled, X_test_tfidf, y_train_resampled, y_test, vectorizer
+
 
 # Train the model
 def train_model(X_train_tfidf, y_train):
