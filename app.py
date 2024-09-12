@@ -50,10 +50,11 @@ def preprocess_data(df):
         # Split into training and test data
         X_train, X_test, y_train, y_test = train_test_split(X_tfidf, y_encoded, test_size=0.2, random_state=42)
         
-        # Check if we have enough samples to apply SMOTE
         num_samples = X_train.shape[0]
+        
+        # If there are not enough samples, handle this case
         if num_samples <= 1:
-            st.warning("Not enough data to apply SMOTE. Consider using a larger dataset.")
+            st.warning("Not enough data to apply SMOTE or train the model effectively. Consider using a larger dataset.")
             return X_train, X_test, y_train, y_test, vectorizer, le
         
         # Handle class imbalance using SMOTE with adjusted k_neighbors
