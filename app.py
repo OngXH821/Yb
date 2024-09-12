@@ -58,24 +58,39 @@ def predict(model, vectorizer, input_text):
         logging.debug(f"Prediction: {prediction[0]}, Probabilities: {prediction_prob}")
         
         return prediction[0]
-    except Exception as e:
+    except ValueError as e:
         logging.error(f"Error during prediction: {str(e)}")
-        st.error(f"An error occurred: {e}")
+        st.error(f"ValueError: {e}")
+        return None
+    except Exception as e:
+        logging.error(f"Unexpected error during prediction: {str(e)}")
+        st.error(f"An unexpected error occurred: {e}")
         return None
 
 # Streamlit UI
 st.title('Product Review Sentiment Analysis')
 
 # Load data
-df = load_data()
+try:
+    df = load_data()
+except Exception as e:
+    st.error(f"Error loading data: {e}")
+    st.stop()  # Stop execution if data cannot be loaded
 
 # Show data sample
 if st.checkbox('Show data sample'):
     st.write(df.head())
 
 # Preprocess data and train model
-X_train_tfidf, X_test_tfidf, y_train, y_test, vectorizer = preprocess_data(df)
-model = train_model(X_train_tfidf, y_train)
+try:
+    X_train_tfidf, X_test_tfidf, y_train, y_test, vectorizer = preprocess_data(df)
+    model = train_model(X_train_tfidf, y_train)
+except ValueError as e:
+    st.error(f"ValueError during data preprocessing or model training: {e}")
+    st.stop()
+except Exception as e:
+    st.error(f"Unexpected error during preprocessing or training: {e}")
+    st.stop()
 
 # Get user input
 user_input = st.text_area("Enter a product review to analyze its sentiment:")
@@ -91,7 +106,10 @@ if user_input:
 
 # Evaluate the model
 if st.checkbox('Evaluate model'):
-    y_pred = model.predict(X_test_tfidf)
-    report = classification_report(y_test, y_pred, target_names=['Negative', 'Positive'])
-    st.text('Classification Report:')
-    st.text(report)
+    try:
+        y_pred = model.predict(X_test_tfidf)
+        report = classification_report(y_test, y_pred, target_names=['Negative', 'Positive'])
+        st.text('Classification Report:')
+        st.text(report)
+    except Exception as e:
+        st.error(f"Error during model evaluation: {e}")
