@@ -1,0 +1,9 @@
+review,sentiment
+"This product is amazing! I love it.",positive
+"I had a terrible experience with this product.",negative
+"Great quality and excellent customer service.",positive
+"The product broke after one use. Very disappointed.",negative
+"Highly recommend to everyone!",positive
+"The worst purchase I've ever made.",negative
+"This is an awesome product!",positive
+"It did not meet my expectations.",negative
