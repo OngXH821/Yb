@@ -23,6 +23,8 @@ def load_data():
     return df
 
 # Preprocess data
+from imblearn.over_sampling import SMOTE
+
 def preprocess_data(df):
     X = df['review']
     y = df['sentiment']
@@ -35,11 +37,12 @@ def preprocess_data(df):
     X_train_tfidf = vectorizer.fit_transform(X_train)
     X_test_tfidf = vectorizer.transform(X_test)
 
-    # Handle data imbalance using SMOTE
-    smote = SMOTE(random_state=42)
+    # Handle data imbalance using SMOTE, reducing k_neighbors to avoid ValueError
+    smote = SMOTE(random_state=42, k_neighbors=1)  # Use 1 neighbor to prevent the issue
     X_train_tfidf_resampled, y_train_resampled = smote.fit_resample(X_train_tfidf, y_train)
 
     return X_train_tfidf_resampled, X_test_tfidf, y_train_resampled, y_test, vectorizer
+
 
 # Train the model
 def train_model(X_train_tfidf, y_train):
