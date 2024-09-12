@@ -32,7 +32,6 @@ def clean_text(text):
         st.error(f"Error cleaning text: {e}")
         return ""
 
-# Preprocess data
 def preprocess_data(df):
     try:
         df = df.dropna(subset=['review', 'sentiment'])
@@ -47,15 +46,23 @@ def preprocess_data(df):
         vectorizer = TfidfVectorizer(max_features=5000, stop_words='english')
         X_tfidf = vectorizer.fit_transform(X)
         
+        # Split into training and test data
         X_train, X_test, y_train, y_test = train_test_split(X_tfidf, y_encoded, test_size=0.2, random_state=42)
         
-        smote = SMOTE(random_state=42)
+        # Check if we have enough samples to apply SMOTE
+        if len(y_train) <= 1:
+            st.warning("Not enough data to apply SMOTE. Consider using a larger dataset.")
+            return X_train, X_test, y_train, y_test, vectorizer, le
+        
+        # Handle class imbalance using SMOTE
+        smote = SMOTE(random_state=42, k_neighbors=min(5, len(X_train) - 1))
         X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
         
         return X_train_balanced, X_test, y_train_balanced, y_test, vectorizer, le
     except Exception as e:
         st.error(f"Error preprocessing data: {e}")
         return None, None, None, None, None, None
+
 
 # Train the model
 def train_model(X_train, y_train):
