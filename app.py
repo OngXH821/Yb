@@ -4,16 +4,25 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
+from imblearn.over_sampling import SMOTE
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
 
 # Load dataset
 @st.cache_data
 def load_data():
     df = pd.read_csv('product_reviews.csv')
+    
+    # Check for missing data
+    if df.isnull().values.any():
+        st.write("Data contains missing values. Handling missing data...")
+        df = df.dropna()  # Dropping missing data for simplicity
+    
     return df
 
 # Preprocess data
-from imblearn.over_sampling import SMOTE
-
 def preprocess_data(df):
     X = df['review']
     y = df['sentiment']
@@ -32,7 +41,6 @@ def preprocess_data(df):
 
     return X_train_tfidf_resampled, X_test_tfidf, y_train_resampled, y_test, vectorizer
 
-
 # Train the model
 def train_model(X_train_tfidf, y_train):
     model = LogisticRegression()
@@ -41,13 +49,19 @@ def train_model(X_train_tfidf, y_train):
 
 # Predict sentiment
 def predict(model, vectorizer, input_text):
-    input_tfidf = vectorizer.transform([input_text])
-    prediction = model.predict(input_tfidf)
-    prediction_prob = model.predict_proba(input_tfidf)
-    st.write(f"Prediction: {prediction[0]}")
-    st.write(f"Prediction Probability: {prediction_prob}")
-    return prediction[0]
-
+    try:
+        input_tfidf = vectorizer.transform([input_text])
+        prediction = model.predict(input_tfidf)
+        prediction_prob = model.predict_proba(input_tfidf)
+        
+        # Log the probabilities for debugging
+        logging.debug(f"Prediction: {prediction[0]}, Probabilities: {prediction_prob}")
+        
+        return prediction[0]
+    except Exception as e:
+        logging.error(f"Error during prediction: {str(e)}")
+        st.error(f"An error occurred: {e}")
+        return None
 
 # Streamlit UI
 st.title('Product Review Sentiment Analysis')
@@ -70,8 +84,10 @@ if user_input:
     prediction = predict(model, vectorizer, user_input)
     if prediction == 'positive':
         st.success("The sentiment of the review is Positive!")
-    else:
+    elif prediction == 'negative':
         st.error("The sentiment of the review is Negative!")
+    else:
+        st.error("Prediction error: unable to classify the input.")
 
 # Evaluate the model
 if st.checkbox('Evaluate model'):
