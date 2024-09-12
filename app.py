@@ -3,7 +3,6 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report
 from imblearn.over_sampling import SMOTE
 import logging
 
@@ -23,26 +22,23 @@ def load_data():
     return df
 
 # Preprocess data
-from imblearn.over_sampling import SMOTE
-
 def preprocess_data(df):
     X = df['review']
     y = df['sentiment']
 
     # Split into training and test data
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
     # Vectorize the text
     vectorizer = TfidfVectorizer(max_features=5000, stop_words='english')
     X_train_tfidf = vectorizer.fit_transform(X_train)
     X_test_tfidf = vectorizer.transform(X_test)
 
-    # Handle data imbalance using SMOTE, reducing k_neighbors to avoid ValueError
-    smote = SMOTE(random_state=42, k_neighbors=1)  # Use 1 neighbor to prevent the issue
+    # Handle data imbalance using SMOTE, reducing k_neighbors to 1 for small datasets
+    smote = SMOTE(random_state=42, k_neighbors=1)  # Use 1 neighbor to avoid the error
     X_train_tfidf_resampled, y_train_resampled = smote.fit_resample(X_train_tfidf, y_train)
 
     return X_train_tfidf_resampled, X_test_tfidf, y_train_resampled, y_test, vectorizer
-
 
 # Train the model
 def train_model(X_train_tfidf, y_train):
@@ -55,19 +51,14 @@ def predict(model, vectorizer, input_text):
     try:
         input_tfidf = vectorizer.transform([input_text])
         prediction = model.predict(input_tfidf)
-        prediction_prob = model.predict_proba(input_tfidf)
         
-        # Log the probabilities for debugging
-        logging.debug(f"Prediction: {prediction[0]}, Probabilities: {prediction_prob}")
+        # Log the prediction for debugging
+        logging.debug(f"Prediction: {prediction[0]}")
         
         return prediction[0]
-    except ValueError as e:
-        logging.error(f"Error during prediction: {str(e)}")
-        st.error(f"ValueError: {e}")
-        return None
     except Exception as e:
-        logging.error(f"Unexpected error during prediction: {str(e)}")
-        st.error(f"An unexpected error occurred: {e}")
+        logging.error(f"Error during prediction: {str(e)}")
+        st.error(f"An error occurred during prediction: {e}")
         return None
 
 # Streamlit UI
@@ -78,7 +69,7 @@ try:
     df = load_data()
 except Exception as e:
     st.error(f"Error loading data: {e}")
-    st.stop()  # Stop execution if data cannot be loaded
+    st.stop()
 
 # Show data sample
 if st.checkbox('Show data sample'):
@@ -88,11 +79,8 @@ if st.checkbox('Show data sample'):
 try:
     X_train_tfidf, X_test_tfidf, y_train, y_test, vectorizer = preprocess_data(df)
     model = train_model(X_train_tfidf, y_train)
-except ValueError as e:
-    st.error(f"ValueError during data preprocessing or model training: {e}")
-    st.stop()
 except Exception as e:
-    st.error(f"Unexpected error during preprocessing or training: {e}")
+    st.error(f"Error during data preprocessing or model training: {e}")
     st.stop()
 
 # Get user input
@@ -106,13 +94,3 @@ if user_input:
         st.error("The sentiment of the review is Negative!")
     else:
         st.error("Prediction error: unable to classify the input.")
-
-# Evaluate the model
-if st.checkbox('Evaluate model'):
-    try:
-        y_pred = model.predict(X_test_tfidf)
-        report = classification_report(y_test, y_pred, target_names=['Negative', 'Positive'])
-        st.text('Classification Report:')
-        st.text(report)
-    except Exception as e:
-        st.error(f"Error during model evaluation: {e}")
