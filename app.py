@@ -43,7 +43,11 @@ def train_model(X_train_tfidf, y_train):
 def predict(model, vectorizer, input_text):
     input_tfidf = vectorizer.transform([input_text])
     prediction = model.predict(input_tfidf)
+    prediction_prob = model.predict_proba(input_tfidf)
+    st.write(f"Prediction: {prediction[0]}")
+    st.write(f"Prediction Probability: {prediction_prob}")
     return prediction[0]
+
 
 # Streamlit UI
 st.title('Product Review Sentiment Analysis')
