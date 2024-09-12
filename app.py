@@ -55,8 +55,9 @@ def preprocess_data(df):
             st.warning("Not enough data to apply SMOTE. Consider using a larger dataset.")
             return X_train, X_test, y_train, y_test, vectorizer, le
         
-        # Handle class imbalance using SMOTE
-        smote = SMOTE(random_state=42, k_neighbors=min(5, X_train.shape[0] - 1))
+        # Handle class imbalance using SMOTE with adjusted k_neighbors
+        k_neighbors = min(5, X_train.shape[0] - 1)
+        smote = SMOTE(random_state=42, k_neighbors=k_neighbors)
         X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
         
         return X_train_balanced, X_test, y_train_balanced, y_test, vectorizer, le
